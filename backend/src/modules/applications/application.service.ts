@@ -18,13 +18,13 @@ export async function listMyApplications(userId: string) {
 }
 
 export async function listReceivedApplications(userId: string) {
-  const projects = await ProjectModel.find({ creator_id: userId }).select("id").lean();
+  const projects = await ProjectModel.find({ creator_id: userId }).select("id").lean().exec() as unknown as { id: string }[];
   const applications = await ApplicationModel.find({ project_id: { $in: projects.map(project => project.id) } }).sort({ created_at: -1 }).lean();
   return applications.map(serializeApplication);
 }
 
 export async function listProjectApplications(userId: string, projectId: string) {
-  const project = await ProjectModel.findOne({ id: projectId }).select("creator_id").lean();
+  const project = await ProjectModel.findOne({ id: projectId }).select("creator_id").lean().exec() as unknown as { creator_id: string } | null;
   if (!project) throw new AppError("Project not found.", 404);
   if (project.creator_id !== userId) throw new AppError("Only the project creator can view applications.", 403);
   const applications = await ApplicationModel.find({ project_id: projectId }).sort({ created_at: -1 }).lean();
@@ -42,7 +42,7 @@ export async function applyToRole(userId: string, projectId: string, roleId: str
   if (accepted >= role.openings) throw new AppError("This role is full.", 409);
 
   const application = await ApplicationModel.create({ id: randomUUID(), project_id: projectId, role_id: roleId, applicant_id: userId, message });
-  const profile = await ProfileModel.findOne({ userId }).select("full_name").lean();
+  const profile = await ProfileModel.findOne({ userId }).select("full_name").lean().exec() as unknown as { full_name: string } | null;
   await NotificationModel.create({
     id: randomUUID(), user_id: project.creator_id, title: "New project application",
     message: `${profile?.full_name ?? "A student"} applied for ${role.title}.`, type: "application",
