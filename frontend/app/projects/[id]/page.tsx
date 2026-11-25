@@ -4,16 +4,16 @@ import {useParams} from "next/navigation";
 import {useState} from "react";
 import {Bookmark,Clock,MapPin,Tag as TagIcon} from "lucide-react";
 import {useApp} from "@/lib/store";
-import {ME,Role} from "@/lib/data";
+import {Role} from "@/lib/data";
 import {coverage,matchScore,statusOf,vacancies} from "@/lib/utils";
 import {Avatar,Coverage,Empty,Modal,PageHeader,Pill,Tag} from "@/components/ui";
 export default function Detail(){
-  const {id}=useParams<{id:string}>();const {projects,apps,me,student,saved,toggleSave,apply,students}=useApp();
+  const {id}=useParams<{id:string}>();const {projects,apps,me,meId,student,saved,toggleSave,apply,students}=useApp();
   const [role,setRole]=useState<Role|null>(null);const [msg,setMsg]=useState("");const [err,setErr]=useState("");
   const p=projects.find(x=>x.id===id);if(!p)return <Empty text="Project not found."/>;
-  const owner=p.creatorId===ME;const member=p.team.some(m=>m.studentId===ME);const cov=coverage(p,students);const c=student(p.creatorId)!;
-  const applied=(r:Role)=>apps.some(a=>a.projectId===p.id&&a.roleId===r.id&&a.studentId===ME&&(a.status==="Pending"||a.status==="Accepted"));
-  const send=()=>{if(msg.trim().length<10){setErr("Write at least 10 characters about why you fit this role.");return}apply(p.id,role!.id,msg.trim());setRole(null);setMsg("");setErr("")};
+  const owner=p.creatorId===meId;const member=p.team.some(m=>m.studentId===meId);const cov=coverage(p,students);const c=student(p.creatorId)??{name:"Student",dept:"",year:""};
+  const applied=(r:Role)=>apps.some(a=>a.projectId===p.id&&a.roleId===r.id&&a.studentId===meId&&(a.status==="Pending"||a.status==="Accepted"));
+  const send=async()=>{if(msg.trim().length<10){setErr("Write at least 10 characters about why you fit this role.");return}try{await apply(p.id,role!.id,msg.trim());setRole(null);setMsg("");setErr("")}catch(error){setErr(error instanceof Error?error.message:"Could not send application.")}};
   return <>
     <PageHeader title={p.title} sub={`${p.category} · ${p.department}`} action={<div className="flex gap-2"><button className="btn-ghost" onClick={()=>toggleSave(p.id)}><Bookmark size={16} className={saved.includes(p.id)?"fill-brand text-brand":""}/>{saved.includes(p.id)?"Saved":"Save"}</button>{(owner||member)&&<Link className="btn-primary" href={`/my-projects/${p.id}`}>{owner?"Manage project":"Team dashboard"}</Link>}</div>}/>
     <div className="grid gap-6 lg:grid-cols-3">

@@ -4,6 +4,10 @@ import { AppError } from "../errors/AppError";
 import { env } from "../config/env";
 
 export const globalErrorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
+  if (error && typeof error === "object" && "code" in error && error.code === 11000) {
+    res.status(409).json({ error: { message: "This record already exists.", code: "DUPLICATE_RECORD" } });
+    return;
+  }
   if (error instanceof SyntaxError && "type" in error && error.type === "entity.parse.failed") {
     res.status(400).json({ error: { message: "Request body contains invalid JSON.", code: "INVALID_JSON" } });
     return;

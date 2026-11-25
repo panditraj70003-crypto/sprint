@@ -7,6 +7,10 @@ import { globalErrorHandler } from "./middlewares/error.middleware";
 import { notFoundHandler } from "./middlewares/notFound.middleware";
 import { profileRouter } from "./modules/profiles/profile.routes";
 import { authRouter } from "./modules/auth/auth.routes";
+import { projectRouter } from "./modules/projects/project.routes";
+import { applicationRouter } from "./modules/applications/application.routes";
+import { savedProjectRouter } from "./modules/saved-projects/savedProject.routes";
+import { notificationRouter } from "./modules/notifications/notification.routes";
 
 export const app = express();
 app.disable("x-powered-by");
@@ -18,6 +22,10 @@ app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 300, standardHeaders: "draf
 app.get("/health", (_req, res) => res.status(200).json({ status: "ok" }));
 app.use("/api/v1/auth", authRouter);
 app.use("/api/v1/profiles", profileRouter);
+app.use("/api/v1", projectRouter);
+app.use("/api/v1", applicationRouter);
+app.use("/api/v1", savedProjectRouter);
+app.use("/api/v1", notificationRouter);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);

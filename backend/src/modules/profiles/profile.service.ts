@@ -67,3 +67,12 @@ export async function updateOwnProfile(user: AuthUser, input: ProfileUpdateInput
   if (!document) throw new AppError("Could not save profile.", 500);
   return serializeProfile(document);
 }
+
+export async function listPublicProfiles() {
+  const documents = await ProfileModel.find({}).sort({ full_name: 1 }).limit(200).lean();
+  return documents.map(document => ({
+    id: document.userId, full_name: document.full_name, department: document.department,
+    year: document.year, bio: document.bio, skills: document.skills, interests: document.interests,
+    avatar_url: document.avatar_url, github_url: document.github_url, linkedin_url: document.linkedin_url,
+  }));
+}

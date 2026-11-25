@@ -4,16 +4,16 @@ import {useParams} from "next/navigation";
 import {useState} from "react";
 import {Check,ExternalLink,X} from "lucide-react";
 import {useApp} from "@/lib/store";
-import {ME,Student} from "@/lib/data";
+import {Student} from "@/lib/data";
 import {coverage,filled,statusOf,vacancies} from "@/lib/utils";
 import {Avatar,Confirm,Coverage,Empty,PageHeader,Pill,StudentModal,Tag} from "@/components/ui";
 export default function Manage(){
-  const {id}=useParams<{id:string}>();const {projects,apps,student,students,decide,upsertProject,notify}=useApp();
+  const {id}=useParams<{id:string}>();const {projects,apps,student,students,decide,upsertProject,notify,meId,setClosed}=useApp();
   const [view,setView]=useState<Student|null>(null);const [rej,setRej]=useState<string|null>(null);const [closing,setClosing]=useState(false);
   const p=projects.find(x=>x.id===id);if(!p)return <Empty text="Project not found."/>;
-  const owner=p.creatorId===ME;const list=apps.filter(a=>a.projectId===p.id);
+  const owner=p.creatorId===meId;const list=apps.filter(a=>a.projectId===p.id);
   return <>
-    <PageHeader title={p.title} sub={owner?"Manage applications and your team.":"Team dashboard"} action={<div className="flex gap-2">{owner&&<Link className="btn-ghost" href={`/projects/${p.id}/edit`}>Edit project</Link>}{owner&&!p.draft&&<button className="btn-ghost" onClick={()=>p.closed?(upsertProject({...p,closed:false}),notify("Recruitment reopened")):setClosing(true)}>{p.closed?"Reopen recruitment":"Close recruitment"}</button>}</div>}/>
+    <PageHeader title={p.title} sub={owner?"Manage applications and your team.":"Team dashboard"} action={<div className="flex gap-2">{owner&&<Link className="btn-ghost" href={`/projects/${p.id}/edit`}>Edit project</Link>}{owner&&!p.draft&&<button className="btn-ghost" onClick={()=>p.closed?setClosed(p.id,false).then(()=>notify("Recruitment reopened")).catch(e=>notify(e.message)):setClosing(true)}>{p.closed?"Reopen recruitment":"Close recruitment"}</button>}</div>}/>
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
         <div className="card"><div className="mb-2 flex items-center gap-2"><Pill tone={statusOf(p)==="Recruiting"?"sage":"gray"}>{statusOf(p)}</Pill>{p.deadline&&<span className="text-xs text-[#5b5f5a]">Deadline {p.deadline}</span>}</div><p className="text-sm">{p.description}</p>{p.link&&<a href={p.link} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand"><ExternalLink size={14}/>Collaboration space</a>}</div>
@@ -27,6 +27,6 @@ export default function Manage(){
     </div>
     <StudentModal s={view} onClose={()=>setView(null)}/>
     <Confirm open={!!rej} title="Reject this application?" body="The applicant will see their application as rejected." label="Reject" onNo={()=>setRej(null)} onYes={()=>{decide(rej!,false);setRej(null)}}/>
-    <Confirm open={closing} title="Close recruitment?" body="People will no longer be able to apply. You can reopen it any time." label="Close recruitment" onNo={()=>setClosing(false)} onYes={()=>{upsertProject({...p,closed:true});setClosing(false);notify("Recruitment closed")}}/>
+    <Confirm open={closing} title="Close recruitment?" body="People will no longer be able to apply. You can reopen it any time." label="Close recruitment" onNo={()=>setClosing(false)} onYes={()=>{setClosed(p.id,true).then(()=>notify("Recruitment closed")).catch(e=>notify(e.message));setClosing(false)}}/>
   </>;
 }

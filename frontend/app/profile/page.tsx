@@ -34,6 +34,7 @@ export default function ProfilePage() {
     try {
       const record = await updateProfile(payload);
       setProfile({ ...payload, year: record.year });
+      window.dispatchEvent(new Event("skillbridge-profile-change"));
       setNotice("Profile saved.");
     } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save your profile."); }
     finally { setSaving(false); }

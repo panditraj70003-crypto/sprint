@@ -2,13 +2,12 @@
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import {Plus,Trash2} from "lucide-react";
-import {CATEGORIES,COMMITMENTS,DEPARTMENTS,DURATIONS,MODES,ME,Project,Role} from "@/lib/data";
+import {CATEGORIES,COMMITMENTS,DEPARTMENTS,DURATIONS,MODES,Project,Role} from "@/lib/data";
 import {useApp} from "@/lib/store";
-import {uid} from "@/lib/utils";
 import {PageHeader,TagInput} from "./ui";
-const blank=():Project=>({id:uid("p"),title:"",description:"",category:CATEGORIES[0],department:DEPARTMENTS[0],duration:DURATIONS[1],commitment:COMMITMENTS[1],mode:MODES[0],skills:[],creatorId:ME,roles:[],team:[{studentId:ME,roleId:"lead",roleTitle:"Project Lead"}],draft:true,closed:false});
+const blank=():Project=>({id:"",title:"",description:"",category:CATEGORIES[0],department:DEPARTMENTS[0],duration:DURATIONS[1],commitment:COMMITMENTS[1],mode:MODES[0],skills:[],creatorId:"",roles:[],team:[],draft:true,closed:false});
 export default function ProjectForm({initial}:{initial?:Project}){
-  const {upsertProject,notify}=useApp();const router=useRouter();
+  const {upsertProject,notify,meId}=useApp();const router=useRouter();
   const [p,setP]=useState<Project>(initial??blank());const [errs,setErrs]=useState<Record<string,string>>({});
   const set=<K extends keyof Project>(k:K,v:Project[K])=>setP(x=>({...x,[k]:v}));
   const setRole=(i:number,patch:Partial<Role>)=>set("roles",p.roles.map((r,j)=>j===i?{...r,...patch}:r));
@@ -24,10 +23,10 @@ export default function ProjectForm({initial}:{initial?:Project}){
     }
     setErrs(e);return!Object.keys(e).length;
   };
-  const submit=(publish:boolean)=>{
+  const submit=async(publish:boolean)=>{
     if(!validate(publish)){notify("Fix the highlighted fields");return}
-    upsertProject({...p,draft:!publish});notify(publish?"Project published":"Draft saved");
-    router.push(publish?`/projects/${p.id}`:"/my-projects");
+    try { const result=await upsertProject({...p,creatorId:meId,draft:!publish});notify(publish?"Project published":"Draft saved");router.push(publish?`/projects/${result.id}`:"/my-projects"); }
+    catch(error){notify(error instanceof Error?error.message:"Could not save project.")}
   };
   const E=({k}:{k:string})=>errs[k]?<p className="err">{errs[k]}</p>:null;
   const Sel=({k,o,l}:{k:"category"|"department"|"duration"|"commitment"|"mode";o:string[];l:string})=><div><label className="label">{l}</label><select className="input" value={p[k]} onChange={e=>set(k,e.target.value)}>{o.map(x=><option key={x}>{x}</option>)}</select></div>;
@@ -41,7 +40,7 @@ export default function ProjectForm({initial}:{initial?:Project}){
         <div><label className="label">Required skills</label><TagInput value={p.skills} onChange={v=>set("skills",v)} placeholder="Add a skill, press Enter"/><E k="skills"/></div>
       </div>
       <div className="card space-y-4">
-        <div className="flex items-center justify-between"><div><h2 className="font-bold">Team roles</h2><p className="text-xs text-[#5b5f5a]">Each role can have several openings.</p></div><button type="button" className="btn-ghost" onClick={()=>set("roles",[...p.roles,{id:uid("r"),title:"",description:"",skills:[],openings:1}])}><Plus size={16}/>Add role</button></div>
+        <div className="flex items-center justify-between"><div><h2 className="font-bold">Team roles</h2><p className="text-xs text-[#5b5f5a]">Each role can have several openings.</p></div><button type="button" className="btn-ghost" onClick={()=>set("roles",[...p.roles,{id:crypto.randomUUID(),title:"",description:"",skills:[],openings:1}])}><Plus size={16}/>Add role</button></div>
         <E k="roles"/>
         {p.roles.map((r,i)=><div key={r.id} className="space-y-3 rounded-xl border border-line bg-paper p-4">
           <div className="flex gap-3"><div className="flex-1"><label className="label">Role title</label><input className="input" value={r.title} onChange={e=>setRole(i,{title:e.target.value})}/><E k={`rt${i}`}/></div><div className="w-24"><label className="label">Openings</label><input type="number" min={1} className="input" value={r.openings} onChange={e=>setRole(i,{openings:Number(e.target.value)})}/><E k={`ro${i}`}/></div><button type="button" aria-label="Remove role" className="mt-7 text-red-700" onClick={()=>set("roles",p.roles.filter((_,j)=>j!==i))}><Trash2 size={18}/></button></div>

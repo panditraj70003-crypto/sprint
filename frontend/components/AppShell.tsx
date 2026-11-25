@@ -4,12 +4,11 @@ import {usePathname,useRouter} from "next/navigation";
 import {Bell,Bookmark,Compass,FileText,FolderKanban,Home,Plus,Search,User,Users,Sprout,LogIn,LogOut} from "lucide-react";
 import {ReactNode,useEffect,useState} from "react";
 import {useApp} from "@/lib/store";
-import {ME} from "@/lib/data";
 import {Avatar} from "./ui";
 import {getValidSession,logout as logoutSession} from "@/lib/auth-api";
 const NAV=[["/","Dashboard",Home],["/explore","Explore Projects",Compass],["/students","Find Students",Users],["/my-projects","My Projects",FolderKanban],["/applications","My Applications",FileText],["/saved","Saved",Bookmark],["/profile","Profile",User]] as const;
 export default function AppShell({children}:{children:ReactNode}){
-  const path=usePathname();const router=useRouter();const {me,projects,apps,toast}=useApp();const [q,setQ]=useState("");const [signedIn,setSignedIn]=useState(false);
+  const path=usePathname();const router=useRouter();const {me,meId,projects,apps,notifications,markNotificationRead,toast}=useApp();const [q,setQ]=useState("");const [signedIn,setSignedIn]=useState(false);const [showNotifications,setShowNotifications]=useState(false);
   const publicPage=path==="/login"||path==="/register"||path.startsWith("/auth/");
   useEffect(()=>{
     if(publicPage)return;
@@ -26,7 +25,7 @@ export default function AppShell({children}:{children:ReactNode}){
   },[path,publicPage]);
   if(publicPage)return <>{children}</>;
   const logout=async()=>{await logoutSession();setSignedIn(false)};
-  const pending=apps.filter(a=>a.status==="Pending"&&projects.find(p=>p.id===a.projectId)?.creatorId===ME).length;
+  const pending=notifications.filter(item=>!item.is_read).length;
   const active=(h:string)=>h==="/"?path==="/":path.startsWith(h)||(h==="/explore"&&path.startsWith("/projects")&&path!=="/projects/new");
   return <div className="min-h-screen lg:pl-64">
     <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-line bg-white p-5 lg:flex">
@@ -40,7 +39,7 @@ export default function AppShell({children}:{children:ReactNode}){
       <Link href="/" className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-white lg:hidden"><Sprout size={18}/></Link>
       <form className="relative max-w-xl flex-1" onSubmit={e=>{e.preventDefault();router.push(`/explore?q=${encodeURIComponent(q)}`)}}><Search size={16} className="absolute left-3 top-2.5 text-[#8a8d86]"/><input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search projects or skills" className="input pl-9"/></form>
       <Link href="/projects/new" className="btn-primary px-3 lg:hidden" aria-label="Create project"><Plus size={18}/></Link>
-      <Link href="/my-projects" className="relative rounded-xl border border-line bg-white p-2" aria-label="Notifications"><Bell size={18}/>{pending>0&&<span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-amber px-1 text-[10px] font-bold">{pending}</span>}</Link>
+      <div className="relative"><button onClick={()=>setShowNotifications(open=>!open)} className="relative rounded-xl border border-line bg-white p-2" aria-label="Notifications"><Bell size={18}/>{pending>0&&<span className="absolute -right-1 -top-1 grid h-4 min-w-4 place-items-center rounded-full bg-amber px-1 text-[10px] font-bold">{pending}</span>}</button>{showNotifications&&<div className="absolute right-0 top-12 z-50 w-80 rounded-2xl border border-line bg-white p-3 shadow-xl"><div className="mb-2 flex items-center justify-between"><p className="font-bold">Notifications</p><button className="text-xs text-brand" onClick={()=>setShowNotifications(false)}>Close</button></div>{notifications.length?notifications.slice(0,8).map(item=><button key={item.id} onClick={()=>{if(!item.is_read)void markNotificationRead(item.id);}} className={`block w-full rounded-xl p-3 text-left hover:bg-paper ${item.is_read?"opacity-60":"bg-sage/50"}`}><span className="text-sm font-semibold">{item.title}</span><span className="mt-1 block text-xs text-[#5b5f5a]">{item.message}</span></button>):<p className="p-3 text-sm text-[#5b5f5a]">You are all caught up.</p>}</div>}</div>
       {signedIn?<><Link href="/profile" aria-label="Profile"><Avatar name={me.name} size={36}/></Link><button onClick={logout} className="rounded-xl border border-line bg-white p-2 text-[#5b5f5a]" aria-label="Sign out"><LogOut size={18}/></button></>:<Link href="/login" className="btn-primary px-4 py-2"><LogIn size={16}/>Log in</Link>}
     </header>
     <main className="mx-auto max-w-6xl px-4 py-6 pb-28 lg:px-8 lg:pb-10">{children}</main>
