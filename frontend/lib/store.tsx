@@ -30,6 +30,18 @@ function useImpl() {
     } catch (error) { notify(error instanceof Error ? error.message : "Could not load dashboard data."); }
     finally { setLoading(false); }
   }, []);
+  const refreshMyData = useCallback(async () => {
+    try {
+      const session = await getValidSession();
+      if (!session) return;
+      const mine = await workspaceApi.loadMine();
+      setMeId(session.user.id);
+      setProjects(current => [...mine.projects, ...current.filter(project => !mine.projects.some(owned => owned.id === project.id))]);
+      setApps(mine.apps); setSaved(mine.saved); setNotifications(mine.notifications);
+    } catch (error) {
+      notify(error instanceof Error ? error.message : "Could not refresh project applications.");
+    }
+  }, []);
   useEffect(() => { void refresh(); const listener = () => { void refresh(); }; window.addEventListener("skillbridge-auth-change", listener); window.addEventListener("skillbridge-profile-change", listener); return () => { window.removeEventListener("skillbridge-auth-change", listener); window.removeEventListener("skillbridge-profile-change", listener); }; }, [refresh]);
   const student = (id: string) => students.find(item => item.id === id);
   const upsertProject = async (project: Project) => { const savedProject = await workspaceApi.saveProject(project); await refresh(); return savedProject; };
@@ -44,7 +56,7 @@ function useImpl() {
   const setClosed = async (id: string, closed: boolean) => { await workspaceApi.setClosed(id, closed); await refresh(); };
   const completeProject = async (id: string) => { await workspaceApi.completeProject(id); await refresh(); };
   const markNotificationRead = async (id: string) => { try { await workspaceApi.markNotificationRead(id); setNotifications(current => current.map(item => item.id === id ? { ...item, is_read: true } : item)); } catch (error) { notify(error instanceof Error ? error.message : "Could not update notification."); } };
-  return { students, projects, apps, saved, notifications, toast, notify, me, meId, loading, student, upsertProject, apply, withdraw, decide, toggleSave, updateMe, setClosed, completeProject, markNotificationRead, createProjectOpen, openCreateProject: () => setCreateProjectOpen(true), closeCreateProject: () => setCreateProjectOpen(false), refresh };
+  return { students, projects, apps, saved, notifications, toast, notify, me, meId, loading, student, upsertProject, apply, withdraw, decide, toggleSave, updateMe, setClosed, completeProject, markNotificationRead, createProjectOpen, openCreateProject: () => setCreateProjectOpen(true), closeCreateProject: () => setCreateProjectOpen(false), refresh, refreshMyData };
 }
 const Ctx = createContext<ReturnType<typeof useImpl> | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) { const value = useImpl(); return <Ctx.Provider value={value}>{children}</Ctx.Provider>; }

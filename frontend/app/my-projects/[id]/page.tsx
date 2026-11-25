@@ -1,15 +1,16 @@
 "use client";
 import Link from "next/link";
 import {useParams} from "next/navigation";
-import {useState} from "react";
+import {useEffect,useState} from "react";
 import {Check,ExternalLink,X} from "lucide-react";
 import {useApp} from "@/lib/store";
 import {Student} from "@/lib/data";
 import {coverage,filled,openTotal,statusOf,vacancies} from "@/lib/utils";
 import {Avatar,Confirm,Coverage,Empty,PageHeader,Pill,StudentModal,Tag} from "@/components/ui";
 export default function Manage(){
-  const {id}=useParams<{id:string}>();const {projects,apps,student,students,decide,upsertProject,notify,meId,setClosed,completeProject}=useApp();
+  const {id}=useParams<{id:string}>();const {projects,apps,student,students,decide,upsertProject,notify,meId,setClosed,completeProject,refreshMyData}=useApp();
   const [view,setView]=useState<Student|null>(null);const [rej,setRej]=useState<string|null>(null);const [closing,setClosing]=useState(false);const [completing,setCompleting]=useState(false);
+  useEffect(()=>{void refreshMyData();const refreshOnFocus=()=>{void refreshMyData()};const timer=window.setInterval(()=>{if(!document.hidden)void refreshMyData()},12000);window.addEventListener("focus",refreshOnFocus);return()=>{window.clearInterval(timer);window.removeEventListener("focus",refreshOnFocus)}},[refreshMyData]);
   const p=projects.find(x=>x.id===id);if(!p)return <Empty text="Project not found."/>;
   const owner=p.creatorId===meId;const list=apps.filter(a=>a.projectId===p.id);
   return <>
