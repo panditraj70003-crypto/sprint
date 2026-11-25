@@ -28,6 +28,7 @@ export const workspaceApi = {
     return result.project;
   },
   async setClosed(id: string, closed: boolean) { return apiRequest<{ project: Project }>(`/api/v1/projects/${id}/status`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ closed }) }); },
+  async completeProject(id: string) { return apiRequest<{ project: Project }>(`/api/v1/projects/${id}/complete`, { method: "PATCH" }); },
   async apply(projectId: string, roleId: string, message: string) { return apiRequest<{ application: App }>(`/api/v1/projects/${projectId}/applications`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ role_id: roleId, message }) }); },
   async withdraw(id: string) { return apiRequest(`/api/v1/applications/${id}/withdraw`, { method: "PATCH" }); },
   async decide(id: string, accept: boolean) { return apiRequest(`/api/v1/applications/${id}/decision`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: accept ? "accepted" : "rejected" }) }); },

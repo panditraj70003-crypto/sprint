@@ -9,8 +9,8 @@ import {Empty,PageHeader} from "@/components/ui";
 function Inner(){
   const {projects}=useApp();const sp=useSearchParams();
   const [q,setQ]=useState(sp.get("q")??"");const [cat,setCat]=useState("");const [dept,setDept]=useState("");const [skill,setSkill]=useState("");const [openOnly,setOpen]=useState(false);
-  const all=Array.from(new Set(projects.flatMap(p=>p.skills))).sort();
-  const list=projects.filter(p=>!p.draft).filter(p=>{const t=q.toLowerCase();return(!t||(p.title+p.description+p.skills.join(" ")).toLowerCase().includes(t))&&(!cat||p.category===cat)&&(!dept||p.department===dept)&&(!skill||p.skills.includes(skill))&&(!openOnly||(!p.closed&&openTotal(p)>0))});
+  const all=Array.from(new Set(projects.flatMap(p=>[...p.skills,...(p.tags??[])]))).sort();
+  const list=projects.filter(p=>!p.draft).filter(p=>{const t=q.toLowerCase();return(!t||(p.title+p.description+p.skills.join(" ")+(p.tags??[]).join(" ")).toLowerCase().includes(t))&&(!cat||p.category===cat)&&(!dept||p.department===dept)&&(!skill||p.skills.includes(skill)||(p.tags??[]).includes(skill))&&(!openOnly||(!p.closed&&openTotal(p)>0))});
   const Sel=({v,s,o,l}:{v:string;s:(x:string)=>void;o:string[];l:string})=><select aria-label={l} className="input w-auto" value={v} onChange={e=>s(e.target.value)}><option value="">{l}</option>{o.map(x=><option key={x}>{x}</option>)}</select>;
   return <>
     <PageHeader title="Explore projects" sub="Find a team that needs what you are good at."/>

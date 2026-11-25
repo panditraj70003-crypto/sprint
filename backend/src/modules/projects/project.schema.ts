@@ -11,6 +11,7 @@ export const projectSchema = z.object({
   category: z.string().trim().min(1).max(100), department: z.string().max(100).optional().default(""),
   duration: z.string().max(100).optional().default(""), commitment: z.string().max(100).optional().default(""),
   skills: z.array(z.string().trim().min(1).max(60)).max(50).default([]),
+  tags: z.array(z.string().trim().min(1).max(60)).max(50).optional().default([]),
   mode: z.enum(["Remote", "On campus", "Hybrid", "online", "offline", "hybrid"]),
   deadline: z.string().optional().or(z.literal("")), link: z.string().max(500).optional().default(""),
   draft: z.boolean().default(false), closed: z.boolean().default(false), roles: z.array(roleSchema).max(30).default([]),

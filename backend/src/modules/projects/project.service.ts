@@ -39,6 +39,7 @@ export async function saveProject(userId: string, input: any) {
     const current = await ProjectModel.findOne({ id });
     if (!current) throw new AppError("Project not found.", 404);
     if (current.creator_id !== userId) throw new AppError("Only the project creator can edit it.", 403);
+    if (current.status === "completed") throw new AppError("Completed projects cannot be edited.", 409);
   }
 
   const roles = (input.roles ?? []).map((role: any) => ({
@@ -55,7 +56,7 @@ export async function saveProject(userId: string, input: any) {
     $set: {
       creator_id: userId, title: input.title.trim(), description: input.description ?? "", category: input.category,
       department: input.department ?? "", duration: input.duration ?? "", commitment: input.commitment ?? "",
-      skills: input.skills ?? [], tags: input.tags ?? input.skills ?? [], mode: modeToDb(input.mode),
+      skills: input.skills ?? [], tags: input.tags ?? [], mode: modeToDb(input.mode),
       deadline: input.deadline ? new Date(input.deadline) : null, link: input.link ?? "", roles, members, status,
     }, $setOnInsert: { id, created_at: new Date() },
   }, { upsert: true, new: true, runValidators: true });
@@ -66,8 +67,18 @@ export async function saveProject(userId: string, input: any) {
 export async function setProjectClosed(userId: string, projectId: string, closed: boolean) {
   const current = await ProjectModel.findOne({ id: projectId, creator_id: userId });
   if (!current) throw new AppError("Project not found or you are not its creator.", 404);
+  if (current.status === "completed") throw new AppError("Completed projects cannot reopen recruitment.", 409);
   const isFull = current.roles.length > 0 && current.roles.every((role: any) => current.members.filter((member: any) => member.role_id === role.id).length >= role.openings);
   const project = await ProjectModel.findOneAndUpdate({ id: projectId, creator_id: userId }, { $set: { status: closed ? "closed" : isFull ? "full" : "open" } }, { new: true });
   if (!project) throw new AppError("Project not found or you are not its creator.", 404);
+  return serializeProject(project.toObject());
+}
+
+export async function markProjectCompleted(userId: string, projectId: string) {
+  const project = await ProjectModel.findOne({ id: projectId, creator_id: userId });
+  if (!project) throw new AppError("Project not found or you are not its creator.", 404);
+  if (project.status === "open" || project.status === "draft") throw new AppError("Close recruitment before marking this project complete.", 409);
+  project.status = "completed";
+  await project.save();
   return serializeProject(project.toObject());
 }

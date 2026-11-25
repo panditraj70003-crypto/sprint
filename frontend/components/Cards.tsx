@@ -11,7 +11,7 @@ export function ProjectCard({p}:{p:Project}){
     <div className="mb-3 flex items-start justify-between gap-2"><Pill tone="gray">{p.category}</Pill><div className="flex items-center gap-2"><span className="tag bg-amber/30 text-[#6b4a10]">{m}% match</span><button aria-label="Save project" onClick={()=>toggleSave(p.id)}><Bookmark size={18} className={saved.includes(p.id)?"fill-brand text-brand":"text-[#8a8d86]"}/></button></div></div>
     <Link href={`/projects/${p.id}`} className="text-lg font-bold leading-snug hover:text-brand">{p.title}</Link>
     <p className="mt-1 line-clamp-2 text-sm text-[#5b5f5a]">{p.description}</p>
-    <div className="my-3 flex flex-wrap gap-1.5">{p.skills.slice(0,4).map(s=><Tag key={s}>{s}</Tag>)}{p.skills.length>4&&<Pill tone="gray">+{p.skills.length-4}</Pill>}</div>
+    <div className="my-3 flex flex-wrap gap-1.5">{(p.tags?.length?p.tags:p.skills).slice(0,4).map(s=><Tag key={s}>{s}</Tag>)}{(p.tags?.length?p.tags:p.skills).length>4&&<Pill tone="gray">+{(p.tags?.length?p.tags:p.skills).length-4}</Pill>}</div>
     <div className="mt-auto flex items-center justify-between border-t border-line pt-3 text-xs text-[#5b5f5a]"><span className="flex items-center gap-2"><Avatar name={student(p.creatorId)?.name??"?"} size={24}/>{student(p.creatorId)?.name}</span><span className="flex items-center gap-3"><span className="flex items-center gap-1"><Users size={13}/>{p.team.length}</span><span className="font-semibold text-brand">{open>0&&!p.closed?`${open} open`:statusOf(p)}</span></span></div>
   </div>;
 }

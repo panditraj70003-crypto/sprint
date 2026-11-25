@@ -12,6 +12,7 @@ function useImpl() {
   const [apps, setApps] = useState<App[]>([]); const [saved, setSaved] = useState<string[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [me, setMe] = useState<Student>(emptyMe); const [meId, setMeId] = useState("");
+  const [createProjectOpen, setCreateProjectOpen] = useState(false);
   const [toast, setToast] = useState(""); const [loading, setLoading] = useState(true);
   const notify = (message: string) => { setToast(message); setTimeout(() => setToast(""), 2600); };
   const refresh = useCallback(async () => {
@@ -41,8 +42,9 @@ function useImpl() {
     setMe({ ...me, id: profile.id, name: profile.full_name, dept: profile.department ?? "", skills: profile.skills, interests: profile.interests }); notify("Profile updated");
   };
   const setClosed = async (id: string, closed: boolean) => { await workspaceApi.setClosed(id, closed); await refresh(); };
+  const completeProject = async (id: string) => { await workspaceApi.completeProject(id); await refresh(); };
   const markNotificationRead = async (id: string) => { try { await workspaceApi.markNotificationRead(id); setNotifications(current => current.map(item => item.id === id ? { ...item, is_read: true } : item)); } catch (error) { notify(error instanceof Error ? error.message : "Could not update notification."); } };
-  return { students, projects, apps, saved, notifications, toast, notify, me, meId, loading, student, upsertProject, apply, withdraw, decide, toggleSave, updateMe, setClosed, markNotificationRead, refresh };
+  return { students, projects, apps, saved, notifications, toast, notify, me, meId, loading, student, upsertProject, apply, withdraw, decide, toggleSave, updateMe, setClosed, completeProject, markNotificationRead, createProjectOpen, openCreateProject: () => setCreateProjectOpen(true), closeCreateProject: () => setCreateProjectOpen(false), refresh };
 }
 const Ctx = createContext<ReturnType<typeof useImpl> | null>(null);
 export function StoreProvider({ children }: { children: ReactNode }) { const value = useImpl(); return <Ctx.Provider value={value}>{children}</Ctx.Provider>; }

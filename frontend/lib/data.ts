@@ -1,7 +1,7 @@
 export type Student = { id: string; name: string; dept: string; year: string; bio: string; skills: string[]; interests: string[]; roles: string[]; github: string; linkedin: string; portfolio: string; past: string[] };
 export type Role = { id: string; title: string; description: string; skills: string[]; openings: number };
 export type Member = { studentId: string; roleId: string; roleTitle: string; isOwner?: boolean };
-export type Project = { id: string; title: string; description: string; category: string; department: string; duration: string; commitment: string; mode: string; skills: string[]; creatorId: string; roles: Role[]; team: Member[]; draft: boolean; closed: boolean; deadline?: string; link?: string; status?: string; created_at?: string };
+export type Project = { id: string; title: string; description: string; category: string; department: string; duration: string; commitment: string; mode: string; skills: string[]; tags?: string[]; creatorId: string; roles: Role[]; team: Member[]; draft: boolean; closed: boolean; deadline?: string; link?: string; status?: string; created_at?: string };
 export type App = { id: string; projectId: string; roleId: string; studentId: string; message: string; date: string; status: "Pending" | "Accepted" | "Rejected" | "Withdrawn" };
 
 export const CATEGORIES = ["Web & Apps", "AI & Data", "Hardware & IoT", "Design", "Research", "Social Impact", "Startup"];

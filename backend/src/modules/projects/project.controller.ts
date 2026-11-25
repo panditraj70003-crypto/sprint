@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import type { RequestHandler } from "express";
 import { AppError } from "../../errors/AppError";
 import { getAuthenticatedUserId } from "../../utils/authenticatedUser";
-import { getProject, listMyProjects, listProjects, saveProject, setProjectClosed } from "./project.service";
+import { getProject, listMyProjects, listProjects, markProjectCompleted, saveProject, setProjectClosed } from "./project.service";
 import { projectSchema, projectStatusSchema } from "./project.schema";
 
 export const getProjects: RequestHandler = async (_req, res) => { res.json({ projects: await listProjects() }); };
@@ -26,4 +26,8 @@ export const updateProjectStatus: RequestHandler = async (req, res) => {
   const parsed = projectStatusSchema.safeParse(req.body);
   if (!parsed.success) throw new AppError("closed must be a boolean.", 400);
   res.json({ project: await setProjectClosed(getAuthenticatedUserId(req), req.params.id, parsed.data.closed) });
+};
+
+export const completeProject: RequestHandler = async (req, res) => {
+  res.json({ project: await markProjectCompleted(getAuthenticatedUserId(req), req.params.id) });
 };

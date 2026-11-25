@@ -9,6 +9,8 @@ npm install
 npm run dev
 ```
 
+To create the local demo accounts for the project workflow, run `npm run seed:demo` from this folder. The accounts are `student.a@skillbridge.demo` / `StudentA-Demo-2026!` and `student.b@skillbridge.demo` / `StudentB-Demo-2026!`. Student A is the creator profile; Student B has React and JavaScript skills. The script only seeds the users and profiles; create the project in the dashboard as Student A so the application flow remains interactive.
+
 Set `MONGODB_URI` in `.env`; it defaults to `mongodb://127.0.0.1:27017/skillbridge`. `JWT_ACCESS_SECRET` must be a random value of at least 32 characters. The local `.env` has one generated value.
 
 The default MongoDB URI assumes a MongoDB server is running on this machine. For MongoDB Atlas, replace `MONGODB_URI` with your cluster connection string.
@@ -32,6 +34,7 @@ The backend connects to MongoDB before listening. It creates user, session, prof
 | `POST` | `/api/v1/projects` | Bearer access token | Create a project and add its creator as owner |
 | `PATCH` | `/api/v1/projects/:id` | Bearer access token | Update a project |
 | `PATCH` | `/api/v1/projects/:id/status` | Bearer access token | Close or reopen recruitment |
+| `PATCH` | `/api/v1/projects/:id/complete` | Bearer access token | Mark a closed or fully staffed project complete |
 | `GET` | `/api/v1/my-projects` | Bearer access token | List created and joined projects |
 | `POST` | `/api/v1/projects/:id/applications` | Bearer access token | Apply for a role |
 | `GET` | `/api/v1/applications/me` | Bearer access token | List submitted applications |

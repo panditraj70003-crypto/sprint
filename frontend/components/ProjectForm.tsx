@@ -6,9 +6,9 @@ import {CATEGORIES,COMMITMENTS,DEPARTMENTS,DURATIONS,MODES,Project,Role} from "@
 import {useApp} from "@/lib/store";
 import {PageHeader,TagInput} from "./ui";
 const blank=():Project=>({id:"",title:"",description:"",category:CATEGORIES[0],department:DEPARTMENTS[0],duration:DURATIONS[1],commitment:COMMITMENTS[1],mode:MODES[0],skills:[],creatorId:"",roles:[],team:[],draft:true,closed:false});
-export default function ProjectForm({initial}:{initial?:Project}){
+export default function ProjectForm({initial,onComplete,onCancel}:{initial?:Project;onComplete?:()=>void;onCancel?:()=>void}){
   const {upsertProject,notify,meId}=useApp();const router=useRouter();
-  const [p,setP]=useState<Project>(initial??blank());const [errs,setErrs]=useState<Record<string,string>>({});
+  const [p,setP]=useState<Project>(initial??blank());const [errs,setErrs]=useState<Record<string,string>>({});const [saving,setSaving]=useState(false);
   const set=<K extends keyof Project>(k:K,v:Project[K])=>setP(x=>({...x,[k]:v}));
   const setRole=(i:number,patch:Partial<Role>)=>set("roles",p.roles.map((r,j)=>j===i?{...r,...patch}:r));
   const validate=(publish:boolean)=>{
@@ -24,20 +24,24 @@ export default function ProjectForm({initial}:{initial?:Project}){
     setErrs(e);return!Object.keys(e).length;
   };
   const submit=async(publish:boolean)=>{
+    if(saving)return;
     if(!validate(publish)){notify("Fix the highlighted fields");return}
-    try { const result=await upsertProject({...p,creatorId:meId,draft:!publish});notify(publish?"Project published":"Draft saved");router.push(publish?`/projects/${result.id}`:"/my-projects"); }
+    setSaving(true);
+    try { const result=await upsertProject({...p,creatorId:meId,draft:!publish});notify(publish?"Project published":"Draft saved");if(onComplete)onComplete();else router.push(publish?`/projects/${result.id}`:"/my-projects"); }
     catch(error){notify(error instanceof Error?error.message:"Could not save project.")}
+    finally{setSaving(false)}
   };
   const E=({k}:{k:string})=>errs[k]?<p className="err">{errs[k]}</p>:null;
   const Sel=({k,o,l}:{k:"category"|"department"|"duration"|"commitment"|"mode";o:string[];l:string})=><div><label className="label">{l}</label><select className="input" value={p[k]} onChange={e=>set(k,e.target.value)}>{o.map(x=><option key={x}>{x}</option>)}</select></div>;
   return <>
-    <PageHeader title={initial?"Edit project":"Create project"} sub="Tell people what you are building and who you need."/>
+    {!onComplete&&<PageHeader title={initial?"Edit project":"Create project"} sub="Tell people what you are building and who you need."/>}
     <div className="max-w-3xl space-y-5">
       <div className="card space-y-4">
         <div><label className="label">Title</label><input className="input" value={p.title} onChange={e=>set("title",e.target.value)} placeholder="e.g. Hostel laundry slot booking"/><E k="title"/></div>
         <div><label className="label">Description</label><textarea rows={4} className="input" value={p.description} onChange={e=>set("description",e.target.value)} placeholder="What problem are you solving, and what will the team build?"/><E k="description"/></div>
         <div className="grid gap-4 sm:grid-cols-2"><Sel k="category" o={CATEGORIES} l="Category"/><Sel k="department" o={DEPARTMENTS} l="Department"/><Sel k="duration" o={DURATIONS} l="Duration"/><Sel k="commitment" o={COMMITMENTS} l="Time commitment"/><Sel k="mode" o={MODES} l="Project mode"/></div>
         <div><label className="label">Required skills</label><TagInput value={p.skills} onChange={v=>set("skills",v)} placeholder="Add a skill, press Enter"/><E k="skills"/></div>
+        <div><label className="label">Project tags</label><TagInput value={p.tags??[]} onChange={v=>set("tags",v)} placeholder="Add a searchable tag"/></div>
       </div>
       <div className="card space-y-4">
         <div className="flex items-center justify-between"><div><h2 className="font-bold">Team roles</h2><p className="text-xs text-[#5b5f5a]">Each role can have several openings.</p></div><button type="button" className="btn-ghost" onClick={()=>set("roles",[...p.roles,{id:crypto.randomUUID(),title:"",description:"",skills:[],openings:1}])}><Plus size={16}/>Add role</button></div>
@@ -48,6 +52,6 @@ export default function ProjectForm({initial}:{initial?:Project}){
           <div><label className="label">Role skills</label><TagInput value={r.skills} onChange={v=>setRole(i,{skills:v})}/></div></div>)}
       </div>
       <div className="card grid gap-4 sm:grid-cols-2"><div><label className="label">Recruitment deadline (optional)</label><input type="date" className="input" value={p.deadline??""} onChange={e=>set("deadline",e.target.value)}/></div><div><label className="label">Collaboration link (optional)</label><input className="input" value={p.link??""} onChange={e=>set("link",e.target.value)} placeholder="https://discord.gg/..."/><E k="link"/></div></div>
-      <div className="flex justify-end gap-2"><button className="btn-ghost" onClick={()=>submit(false)}>Save draft</button><button className="btn-primary" onClick={()=>submit(true)}>{initial&&!initial.draft?"Save and publish":"Publish"}</button></div>
+      <div className="flex justify-end gap-2">{onCancel&&<button className="btn-ghost" type="button" onClick={onCancel}>Cancel</button>}<button className="btn-ghost" type="button" disabled={saving} onClick={()=>submit(false)}>{saving?"Saving…":"Save draft"}</button><button className="btn-primary" type="button" disabled={saving} onClick={()=>submit(true)}>{saving?"Saving…":initial&&!initial.draft?"Save and publish":"Publish project"}</button></div>
     </div></>;
 }
