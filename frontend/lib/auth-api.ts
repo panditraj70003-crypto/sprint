@@ -1,4 +1,4 @@
-export const API_BASE = "http://localhost:4000";
+export const API_BASE = "https://sprint-lj2b.onrender.com";
 const SESSION_KEY = "skillbridge_auth_session";
 
 export type AuthSession = {
