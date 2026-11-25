@@ -1,23 +1,61 @@
 "use client";
-import {useState} from "react";
-import {Github,Globe,Linkedin} from "lucide-react";
-import {useApp} from "@/lib/store";
-import {DEPARTMENTS,YEARS,Student} from "@/lib/data";
-import {Avatar,PageHeader,Tag,TagInput} from "@/components/ui";
-export default function Profile(){
-  const {me,updateMe,notify}=useApp();const [edit,setEdit]=useState(false);const [f,setF]=useState<Student>(me);const [err,setErr]=useState("");
-  const save=()=>{if(f.name.trim().length<2){setErr("Name is required.");return}if(f.bio.trim().length<10){setErr("Write a short bio of at least 10 characters.");return}if(!f.skills.length){setErr("Add at least one skill.");return}setErr("");updateMe(f);setEdit(false)};
-  const T=({k,l}:{k:"name"|"github"|"linkedin"|"portfolio";l:string})=><div><label className="label">{l}</label><input className="input" value={f[k]} onChange={e=>setF({...f,[k]:e.target.value})}/></div>;
-  if(edit)return <><PageHeader title="Edit profile"/><div className="card max-w-2xl space-y-4"><T k="name" l="Name"/><div className="grid gap-4 sm:grid-cols-2"><div><label className="label">Department</label><select className="input" value={f.dept} onChange={e=>setF({...f,dept:e.target.value})}>{DEPARTMENTS.map(d=><option key={d}>{d}</option>)}</select></div><div><label className="label">Academic year</label><select className="input" value={f.year} onChange={e=>setF({...f,year:e.target.value})}>{YEARS.map(d=><option key={d}>{d}</option>)}</select></div></div>
-    <div><label className="label">Bio</label><textarea rows={3} className="input" value={f.bio} onChange={e=>setF({...f,bio:e.target.value})}/></div>
-    <div><label className="label">Skills</label><TagInput value={f.skills} onChange={v=>setF({...f,skills:v})}/></div><div><label className="label">Interests</label><TagInput value={f.interests} onChange={v=>setF({...f,interests:v})}/></div><div><label className="label">Preferred roles</label><TagInput value={f.roles} onChange={v=>setF({...f,roles:v})}/></div>
-    <T k="github" l="GitHub"/><T k="linkedin" l="LinkedIn"/><T k="portfolio" l="Portfolio"/>{err&&<p className="err">{err}</p>}
-    <div className="flex justify-end gap-2"><button className="btn-ghost" onClick={()=>{setF(me);setErr("");setEdit(false)}}>Cancel</button><button className="btn-primary" onClick={save}>Save profile</button></div></div></>;
-  return <><PageHeader title="Profile" action={<button className="btn-primary" onClick={()=>{setF(me);setEdit(true)}}>Edit profile</button>}/>
-    <div className="grid gap-6 lg:grid-cols-3"><div className="card lg:col-span-2"><div className="mb-4 flex items-center gap-4"><Avatar name={me.name} size={72}/><div><h2 className="text-xl font-extrabold">{me.name}</h2><p className="text-sm text-[#5b5f5a]">{me.dept} · {me.year}</p></div></div><p className="text-sm">{me.bio}</p>
-      <h3 className="mb-2 mt-5 font-bold">Skills</h3><div className="flex flex-wrap gap-1.5">{me.skills.map(s=><Tag key={s} on>{s}</Tag>)}</div>
-      <h3 className="mb-2 mt-5 font-bold">Interests</h3><div className="flex flex-wrap gap-1.5">{me.interests.map(s=><Tag key={s}>{s}</Tag>)}</div>
-      <h3 className="mb-2 mt-5 font-bold">Preferred roles</h3><div className="flex flex-wrap gap-1.5">{me.roles.map(s=><Tag key={s}>{s}</Tag>)}</div></div>
-    <div className="space-y-6"><div className="card space-y-3 text-sm"><h3 className="font-bold">Links</h3><a className="flex items-center gap-2 text-brand" href={`https://${me.github}`}><Github size={16}/>{me.github}</a><a className="flex items-center gap-2 text-brand" href={`https://${me.linkedin}`}><Linkedin size={16}/>{me.linkedin}</a><a className="flex items-center gap-2 text-brand" href={`https://${me.portfolio}`}><Globe size={16}/>{me.portfolio}</a></div>
-    <div className="card"><h3 className="mb-2 font-bold">Previous projects</h3><ul className="list-inside list-disc text-sm text-[#5b5f5a]">{me.past.map(x=><li key={x}>{x}</li>)}</ul></div></div></div></>;
+
+import { useEffect, useState, FormEvent } from "react";
+import { PageHeader } from "@/components/ui";
+import { getProfile, updateProfile, type Profile, type ProfileUpdate } from "@/lib/profiles-api";
+
+const emptyProfile: ProfileUpdate = { full_name: "", department: "", year: null, bio: "", skills: [], interests: [], avatar_url: "", github_url: "", linkedin_url: "" };
+const asList = (value: string) => value.split(",").map(item => item.trim()).filter(Boolean);
+
+export default function ProfilePage() {
+  const [profile, setProfile] = useState<ProfileUpdate>(emptyProfile);
+  const [skills, setSkills] = useState("");
+  const [interests, setInterests] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    getProfile().then(record => {
+      setProfile({
+        full_name: record.full_name ?? "", department: record.department ?? "", year: record.year,
+        bio: record.bio ?? "", skills: record.skills ?? [], interests: record.interests ?? [],
+        avatar_url: record.avatar_url ?? "", github_url: record.github_url ?? "", linkedin_url: record.linkedin_url ?? "",
+      });
+      setSkills((record.skills ?? []).join(", "));
+      setInterests((record.interests ?? []).join(", "));
+    }).catch(reason => setError(reason instanceof Error ? reason.message : "Could not load your profile.")).finally(() => setLoading(false));
+  }, []);
+
+  async function save(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setSaving(true); setError(""); setNotice("");
+    const payload = { ...profile, skills: asList(skills), interests: asList(interests) };
+    try {
+      const record = await updateProfile(payload);
+      setProfile({ ...payload, year: record.year });
+      setNotice("Profile saved.");
+    } catch (reason) { setError(reason instanceof Error ? reason.message : "Could not save your profile."); }
+    finally { setSaving(false); }
+  }
+
+  const field = (key: keyof ProfileUpdate, label: string, type = "text") => <div>
+    <label className="label" htmlFor={key}>{label}</label>
+    <input className="input" id={key} type={type} value={String(profile[key] ?? "")} onChange={event => setProfile(current => ({ ...current, [key]: type === "number" ? (event.target.value ? Number(event.target.value) : null) : event.target.value }))} />
+  </div>;
+
+  return <>
+    <PageHeader title="Profile" sub="Keep your student details, skills, and interests up to date." />
+    {loading ? <div className="card text-sm text-[#5b5f5a]">Loading profile…</div> : <form onSubmit={save} className="card max-w-3xl space-y-4">
+      {error && <p role="alert" className="err">{error}</p>}
+      {notice && <p role="status" className="text-sm text-brand">{notice}</p>}
+      {field("full_name", "Full name")}
+      <div className="grid gap-4 sm:grid-cols-2">{field("department", "Department")}{field("year", "Academic year (number)", "number")}</div>
+      <div><label className="label" htmlFor="bio">Bio</label><textarea className="input" id="bio" rows={4} maxLength={1000} value={profile.bio ?? ""} onChange={event => setProfile(current => ({ ...current, bio: event.target.value }))} /></div>
+      <div><label className="label" htmlFor="skills">Skills (comma separated)</label><input className="input" id="skills" value={skills} onChange={event => setSkills(event.target.value)} placeholder="TypeScript, UI/UX, SQL" /></div>
+      <div><label className="label" htmlFor="interests">Interests (comma separated)</label><input className="input" id="interests" value={interests} onChange={event => setInterests(event.target.value)} placeholder="Open source, AI, accessibility" /></div>
+      {field("avatar_url", "Avatar URL", "url")}{field("github_url", "GitHub URL", "url")}{field("linkedin_url", "LinkedIn URL", "url")}
+      <div className="flex justify-end"><button className="btn-primary" disabled={saving || loading}>{saving ? "Saving…" : "Save profile"}</button></div>
+    </form>}
+  </>;
 }
