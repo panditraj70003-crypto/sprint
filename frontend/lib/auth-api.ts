@@ -37,26 +37,14 @@ async function post<T>(path: string, body: unknown): Promise<T> {
   return result as T;
 }
 
-export async function register(full_name: string, email: string, password: string) {
-  const result = await post<{ session: AuthSession | null; confirmation_required: boolean }>("/api/v1/auth/register", { full_name, email, password });
-  if (result.session) saveSession(result.session);
+export async function register(input: { full_name: string; email: string; password: string; department: string; year: number | null; bio: string; skills: string[]; interests: string[]; avatar_url: string; github_url: string; linkedin_url: string }) {
+  const result = await post<{ session: AuthSession }>("/api/v1/auth/register", input);
+  saveSession(result.session);
   return result;
 }
 
 export async function login(email: string, password: string) {
   const result = await post<{ session: AuthSession }>("/api/v1/auth/login", { email, password });
-  saveSession(result.session);
-  return result.session;
-}
-
-export async function completeAuthFromRedirect(hash: string) {
-  const params = new URLSearchParams(hash.replace(/^#/, ""));
-  const access_token = params.get("access_token");
-  const refresh_token = params.get("refresh_token");
-  if (!access_token || !refresh_token) throw new Error(params.get("error_description") ?? "Confirmation link is invalid or expired.");
-  const result = await post<{ session: AuthSession }>("/api/v1/auth/callback", {
-    access_token, refresh_token,
-  });
   saveSession(result.session);
   return result.session;
 }

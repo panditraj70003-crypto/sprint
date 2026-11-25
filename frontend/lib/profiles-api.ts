@@ -12,10 +12,9 @@ export type Profile = {
   github_url: string | null;
   linkedin_url: string | null;
   created_at: string;
-  updated_at: string;
 };
 
-export type ProfileUpdate = Omit<Profile, "id" | "created_at" | "updated_at">;
+export type ProfileUpdate = Omit<Profile, "id" | "created_at">;
 async function requestProfile(method: "GET" | "PATCH", body?: ProfileUpdate) {
   const result = await apiRequest<{ profile: Profile }>("/api/v1/profiles/me", {
     method,
