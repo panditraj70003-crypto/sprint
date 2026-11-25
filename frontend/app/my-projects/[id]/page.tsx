@@ -5,7 +5,7 @@ import {useState} from "react";
 import {Check,ExternalLink,X} from "lucide-react";
 import {useApp} from "@/lib/store";
 import {Student} from "@/lib/data";
-import {coverage,filled,statusOf,vacancies} from "@/lib/utils";
+import {coverage,filled,openTotal,statusOf,vacancies} from "@/lib/utils";
 import {Avatar,Confirm,Coverage,Empty,PageHeader,Pill,StudentModal,Tag} from "@/components/ui";
 export default function Manage(){
   const {id}=useParams<{id:string}>();const {projects,apps,student,students,decide,upsertProject,notify,meId,setClosed,completeProject}=useApp();
